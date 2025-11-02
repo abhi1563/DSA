@@ -1,0 +1,59 @@
+package test;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class NormalSearch {
+    public static void main(String[] args) {
+        // Default Windows path + search prefix (used when you don't pass args in Eclipse)
+        String defaultPath = "C:\\Users\\Abhijeet Kumar\\Downloads\\contacts_10000.txt";
+        String defaultPrefix = "AM";
+
+        // If user passed args, use them; otherwise use the defaults (handy for Eclipse)
+        String path;
+        String rawPrefix;
+        if (args.length >= 2) {
+            path = args[0];
+            rawPrefix = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        } else {
+            System.out.println("No args provided — using defaults for Eclipse run.");
+            System.out.println("Path: " + defaultPath);
+            System.out.println("Prefix: " + defaultPrefix);
+            path = defaultPath;
+            rawPrefix = defaultPrefix;
+        }
+
+        String prefix = rawPrefix.toLowerCase(Locale.ROOT);
+
+        List<String> names = new ArrayList<>();
+
+        // Read file
+        try (BufferedReader br = Files.newBufferedReader(Paths.get(path))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (!line.isEmpty()) {
+                    names.add(line);
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+            System.err.println("Make sure the file exists and the path is correct.");
+            System.exit(2);
+        }
+
+        // Brute-force prefix search (case-insensitive)
+        long startNs = System.nanoTime();
+        List<String> matches = names.stream()
+                .filter(s -> s.toLowerCase(Locale.ROOT).startsWith(prefix))
+                .collect(Collectors.toList());
+        long endNs = System.nanoTime();
+
+        // Output
+        System.out.println("Matches (" + matches.size() + "):");
+        matches.forEach(System.out::println);
+        long durationNs = endNs - startNs;
+        System.out.printf("Brute force time: %,d ns (%.3f ms)%n", durationNs, durationNs / 1_000_000.0);
+    }
+}
