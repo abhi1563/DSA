@@ -1,0 +1,93 @@
+package test;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
+
+public class TrieFileSearch {
+
+    static class TrieNode {
+        Map<Character, TrieNode> children = new HashMap<>();
+        boolean endOfWord = false;
+    }
+
+    static class Trie {
+        private final TrieNode root = new TrieNode();
+
+        public void insert(String word) {
+            TrieNode cur = root;
+            for (char ch : word.toCharArray()) {
+                cur = cur.children.computeIfAbsent(ch, k -> new TrieNode());
+            }
+            cur.endOfWord = true;
+        }
+
+        public List<String> searchPrefix(String prefix) {
+            TrieNode cur = root;
+            for (char ch : prefix.toCharArray()) {
+                cur = cur.children.get(ch);
+                if (cur == null) return Collections.emptyList();
+            }
+            List<String> out = new ArrayList<>();
+            collect(prefix, cur, out);
+            return out;
+        }
+
+        private void collect(String prefix, TrieNode node, List<String> out) {
+            if (node.endOfWord) out.add(prefix);
+            for (Map.Entry<Character, TrieNode> e : node.children.entrySet()) {
+                collect(prefix + e.getKey(), e.getValue(), out);
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+
+        // Default path & prefix for Eclipse (Windows)
+        String defaultPath = "C:\\Users\\Abhijeet Kumar\\Downloads\\contacts_10000.txt";
+        String defaultPrefix = "AM";
+
+        String path;
+        String rawPrefix;
+
+        if (args.length >= 2) {
+            path = args[0];
+            rawPrefix = args[1];
+        } else {
+            System.out.println("No args provided — using defaults for Eclipse:");
+            System.out.println("Path: " + defaultPath);
+            System.out.println("Prefix: " + defaultPrefix);
+            path = defaultPath;
+            rawPrefix = defaultPrefix;
+        }
+
+        Trie trie = new Trie();
+        List<String> inserted = new ArrayList<>();
+
+        try (BufferedReader br = Files.newBufferedReader(Paths.get(path))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) continue;
+                String normalized = line.toLowerCase(Locale.ROOT);
+                trie.insert(normalized);
+                inserted.add(normalized);
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+            System.err.println("Verify file path exists & is readable");
+            System.exit(2);
+        }
+
+        String prefix = rawPrefix.toLowerCase(Locale.ROOT);
+
+        long startNs = System.nanoTime();
+        List<String> results = trie.searchPrefix(prefix);
+        long endNs = System.nanoTime();
+
+        System.out.println("Matches (" + results.size() + "):");
+        results.forEach(System.out::println);
+
+        long durationNs = endNs - startNs;
+        System.out.printf("Trie search time: %,d ns (%.3f ms)%n", durationNs, durationNs / 1_000_000.0);
+    }
+}
